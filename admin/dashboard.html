@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Beth Shalom / Maya Tikal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cliente Oficial de Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+    <header class="bg-indigo-900 text-white shadow-md p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="../assets/BS_Logo_3D.png" alt="Logo" class="w-10 h-10 object-contain">
+                <div>
+                    <h1 class="text-base font-bold">Liceo Cristiano "Beth Shalom" / Maya Tikal</h1>
+                    <p class="text-xs text-indigo-200">Panel de Control Administrativo</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+                <span id="userInfo" class="bg-indigo-800 px-3 py-1 rounded-full text-xs font-semibold">Cargando usuario...</span>
+                <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded shadow transition font-bold">
+                    🔒 Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL DEL DASHBOARD -->
+    <main class="max-w-7xl mx-auto p-6 w-full flex-1 space-y-6">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-800 text-sm font-semibold flex items-center justify-between">
+            <span>✅ Sesión verificada con éxito. Acceso concedido al Panel General.</span>
+            <span id="lblRol" class="bg-emerald-200 text-emerald-900 px-2.5 py-1 rounded text-xs uppercase font-bold">Rol: --</span>
+        </div>
+
+        <h2 class="text-2xl font-extrabold text-slate-800">Módulos de Gestión Institucional</h2>
+
+        <!-- TARJETAS DE NAVEGACIÓN A LOS MÓDULOS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- MÓDULO 1: GRADOS Y SECCIONES -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-900 rounded-xl flex items-center justify-center text-xl font-bold mb-3">🏫</div>
+                    <h3 class="font-bold text-lg text-indigo-900 mb-1">1. Grados y Secciones</h3>
+                    <p class="text-xs text-slate-500">Registro, edición y control de los grados escolares activos en la institución.</p>
+                </div>
+                <button onclick="window.location.href='grados.html'" class="w-full bg-indigo-900 hover:bg-indigo-800 text-white text-xs py-2.5 rounded-lg font-bold transition">
+                    Gestionar Grados ➔
+                </button>
+            </div>
+
+            <!-- MÓDULO 2: ESTUDIANTES -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-900 rounded-xl flex items-center justify-center text-xl font-bold mb-3">👨‍🎓</div>
+                    <h3 class="font-bold text-lg text-indigo-900 mb-1">2. Gestión de Estudiantes</h3>
+                    <p class="text-xs text-slate-500">Registro individual, carga masiva por lotes, listados y buscador general con CRUD.</p>
+                </div>
+                <button onclick="window.location.href='estudiantes.html'" class="w-full bg-indigo-900 hover:bg-indigo-800 text-white text-xs py-2.5 rounded-lg font-bold transition">
+                    Gestionar Estudiantes ➔
+                </button>
+            </div>
+
+            <!-- MÓDULO 3: ASIGNATURAS -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="w-12 h-12 bg-amber-100 text-amber-900 rounded-xl flex items-center justify-center text-xl font-bold mb-3">📚</div>
+                    <h3 class="font-bold text-lg text-indigo-900 mb-1">3. Asignaturas y Cursos</h3>
+                    <p class="text-xs text-slate-500">Alta de materias, planes de estudio y asignaturas impartidas en los diferentes niveles.</p>
+                </div>
+                <button onclick="window.location.href='asignaturas.html'" class="w-full bg-indigo-900 hover:bg-indigo-800 text-white text-xs py-2.5 rounded-lg font-bold transition">
+                    Gestionar Asignaturas ➔
+                </button>
+            </div>
+
+            <!-- MÓDULO 4: REGISTRO DE CUENTAS DOCENTES -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="w-12 h-12 bg-purple-100 text-purple-900 rounded-xl flex items-center justify-center text-xl font-bold mb-3">👤</div>
+                    <h3 class="font-bold text-lg text-indigo-900 mb-1">4. Cuentas de Docentes</h3>
+                    <p class="text-xs text-slate-500">Creación de usuarios, asignación de correos y credenciales/PIN para acceso de profesores.</p>
+                </div>
+                <button onclick="window.location.href='docentes.html'" class="w-full bg-purple-900 hover:bg-purple-800 text-white text-xs py-2.5 rounded-lg font-bold transition">
+                    Gestionar Cuentas Docentes ➔
+                </button>
+            </div>
+
+            <!-- MÓDULO 5: ASIGNACIÓN ACADÉMICA -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="w-12 h-12 bg-purple-100 text-purple-900 rounded-xl flex items-center justify-center text-xl font-bold mb-3">👨‍🏫</div>
+                    <h3 class="font-bold text-lg text-indigo-900 mb-1">5. Carga Académica</h3>
+                    <p class="text-xs text-slate-500">Vinculación de qué curso y grado imparte cada docente registrado en el sistema.</p>
+                </div>
+                <button onclick="window.location.href='asignacion-docente.html'" class="w-full bg-purple-700 hover:bg-purple-800 text-white text-xs py-2.5 rounded-lg font-bold transition">
+                    Asignar Cursos a Docentes ➔
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- SCRIPTS DE SEGURIDAD Y CONEXIÓN -->
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script>
+        // Al cargar la página, ejecutamos el guardián de seguridad (Solo ADMIN o DIRECTOR)
+        document.addEventListener("DOMContentLoaded", async () => {
+            const perfil = await verificarAccesoPorRol(['admin', 'director']);
+            if (perfil) {
+                // Si pasó la seguridad, mostramos sus datos en pantalla
+                document.getElementById('userInfo').innerText = `Admin: ${perfil.nombre_completo || 'Autorizado'}`;
+                document.getElementById('lblRol').innerText = `Rol: ${perfil.rol.toUpperCase()}`;
+            }
+        });
+
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
+            window.location.href = '../index.html';
+        }
+    </script>
+</body>
+</html>

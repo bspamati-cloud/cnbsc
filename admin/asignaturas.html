@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Asignaturas - Beth Shalom / Maya Tikal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cliente Oficial de Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+    <header class="bg-indigo-900 text-white shadow-md p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="../assets/BS_Logo_3D.png" alt="Logo" class="w-10 h-10 object-contain">
+                <div>
+                    <h1 class="text-base font-bold">Liceo Cristiano "Beth Shalom" / Maya Tikal</h1>
+                    <p class="text-xs text-indigo-200">Módulo de Asignaturas y Cursos</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+                <a href="dashboard.html" class="bg-indigo-800 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded shadow transition font-bold">
+                    🏠 Volver al Dashboard
+                </a>
+                <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded shadow transition font-bold">
+                    🔒 Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="max-w-4xl mx-auto p-6 w-full flex-1 space-y-6">
+        
+        <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-extrabold text-slate-800">Administración de Asignaturas</h2>
+            <span id="userInfo" class="text-xs font-semibold bg-white px-3 py-1.5 rounded-lg border shadow-sm">Cargando usuario...</span>
+        </div>
+
+        <!-- TARJETA DE REGISTRO Y LISTADO -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            
+            <!-- Formulario de Registro -->
+            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border">
+                <h3 class="font-bold text-indigo-900 text-sm uppercase">Registrar Nueva Asignatura / Curso</h3>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <input type="text" id="inputAsignatura" placeholder="Ej: Matemática, Comunicación y Lenguaje..." class="flex-1 border border-slate-300 p-2.5 text-sm rounded-lg outline-none bg-white focus:ring-2 focus:ring-indigo-500">
+                    <button onclick="guardarAsignatura()" class="bg-indigo-900 hover:bg-indigo-800 text-white text-xs px-6 py-2.5 rounded-lg font-bold transition shadow">
+                        + Registrar Asignatura
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de Asignaturas Registradas -->
+            <div class="space-y-2">
+                <p class="text-xs font-bold text-slate-500 uppercase">Asignaturas Registradas en el Sistema:</p>
+                <div class="overflow-x-auto border rounded-xl">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 border-b text-xs uppercase text-slate-600">
+                            <tr>
+                                <th class="p-3">Nombre de la Asignatura</th>
+                                <th class="p-3 text-right w-32">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAsignaturasCRUD">
+                            <tr><td colspan="2" class="p-4 text-center text-slate-400">Cargando asignaturas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- SCRIPTS DE SEGURIDAD Y LÓGICA -->
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script>
+        // Al cargar la página, verificamos seguridad y cargamos los datos
+        document.addEventListener("DOMContentLoaded", async () => {
+            const perfil = await verificarAccesoPorRol(['admin', 'director']);
+            if (perfil) {
+                document.getElementById('userInfo').innerText = `Usuario: ${perfil.nombre_completo || perfil.rol}`;
+                cargarAsignaturasCRUD();
+            }
+        });
+
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
+            window.location.href = '../index.html';
+        }
+
+        // --- FUNCIONES DEL MÓDULO DE ASIGNATURAS ---
+        async function guardarAsignatura() {
+            const nom = document.getElementById('inputAsignatura').value.trim();
+            if(!nom) return alert("Escriba el nombre de la asignatura");
+            
+            const { error } = await supabaseClient.from('asignaturas').insert([{ nombre_asignatura: nom }]);
+            if(error) {
+                alert("Error: " + error.message);
+            } else { 
+                document.getElementById('inputAsignatura').value = ''; 
+                cargarAsignaturasCRUD();
+            }
+        }
+
+        async function cargarAsignaturasCRUD() {
+            const { data, error } = await supabaseClient.from('asignaturas').select('*').order('nombre_asignatura');
+            const tbody = document.getElementById('tablaAsignaturasCRUD');
+            
+            if (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-500">Error al cargar las asignaturas.</td></tr>`;
+                return;
+            }
+
+            if(!data || data.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">No hay asignaturas registradas.</td></tr>`; 
+                return; 
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(asig => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-3 font-semibold text-slate-700">${asig.nombre_asignatura}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="editarAsignatura('${asig.id}', '${asig.nombre_asignatura}')" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1.5 rounded font-bold transition">✏️ Editar</button>
+                            <button onclick="eliminarAsignatura('${asig.id}')" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1.5 rounded font-bold transition">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function editarAsignatura(id, actual) {
+            const nuevo = prompt("Modificar nombre de la asignatura:", actual);
+            if(!nuevo || nuevo.trim() === "") return;
+            
+            const { error } = await supabaseClient.from('asignaturas').update({ nombre_asignatura: nuevo.trim() }).eq('id', id);
+            if(error) alert("Error al actualizar: " + error.message);
+            else cargarAsignaturasCRUD();
+        }
+
+        async function eliminarAsignatura(id) {
+            if(!confirm("⚠️ ¿Desea eliminar esta asignatura?")) return;
+            
+            const { error } = await supabaseClient.from('asignaturas').delete().eq('id', id);
+            if(error) alert("No se puede eliminar: Posee dependencias en el sistema.");
+            else cargarAsignaturasCRUD();
+        }
+    </script>
+</body>
+</html>
