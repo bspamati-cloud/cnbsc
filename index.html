@@ -66,7 +66,7 @@
         
         <h2 class="text-2xl font-bold text-slate-800">Panel de Administración General</h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- 1. Registro de Grados -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">1. Registro de Grados</h3>
@@ -78,9 +78,20 @@
                 </div>
             </div>
 
-            <!-- 2. Asignaturas y Cursos -->
+            <!-- 2. Registro de Secciones -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">2. Asignaturas y Cursos</h3>
+                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">2. Registro de Secciones</h3>
+                <div class="space-y-3">
+                    <input type="text" id="inputSeccion" placeholder="Ej: Sección C, A, B..." class="w-full border p-2 text-sm rounded outline-none">
+                    <button onclick="guardarSeccion()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">
+                        + Registrar Sección
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Asignaturas y Cursos -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">3. Asignaturas y Cursos</h3>
                 <div class="space-y-3">
                     <input type="text" id="inputMateria" placeholder="Ej: Psicopedagogía" class="w-full border p-2 text-sm rounded outline-none">
                     <button onclick="guardarMateria()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">
@@ -90,10 +101,10 @@
             </div>
         </div>
 
-        <!-- 3. GESTIÓN DE ESTUDIANTES (Pestañas: Individual vs Masivo + Tabla CRUD) -->
+        <!-- 4. GESTIÓN DE ESTUDIANTES -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-3 gap-2">
-                <h3 class="font-bold text-indigo-900 text-lg">3. Módulo de Gestión de Estudiantes</h3>
+                <h3 class="font-bold text-indigo-900 text-lg">4. Módulo de Gestión de Estudiantes</h3>
                 <div class="flex gap-2 bg-slate-100 p-1 rounded-lg">
                     <button onclick="cambiarModoEstudiante('individual')" id="btnTabInd" class="px-4 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow">Registro Individual</button>
                     <button onclick="cambiarModoEstudiante('masivo')" id="btnTabMas" class="px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">Carga Masiva (Excel)</button>
@@ -101,7 +112,7 @@
                 </div>
             </div>
 
-            <!-- Filtros comunes de Grado y Sección -->
+            <!-- Filtros comunes de Grado y Sección dinámicos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-lg border">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado</label>
@@ -110,11 +121,9 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sección</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Sección</label>
                     <select id="selectSeccionEstudiante" onchange="cargarEstudiantesCRUD()" class="w-full border p-2 text-sm rounded outline-none bg-white">
-                        <option value="A">Sección A</option>
-                        <option value="B">Sección B</option>
-                        <option value="Única">Única</option>
+                        <option value="">Seleccione Sección</option>
                     </select>
                 </div>
             </div>
@@ -136,14 +145,13 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pegar Listado (Formato: Clave \t Apellidos \t Nombres)</label>
                     <textarea id="txtLoteEstudiantes" rows="5" placeholder="Ejemplo:&#10;1	Pérez Gómez	Juan Carlos&#10;2	López Ruano	María Fernanda" class="w-full border p-3 text-sm rounded outline-none font-mono"></textarea>
-                    <p class="text-[11px] text-slate-500 mt-1">💡 Si el sistema detecta claves duplicadas, te alertará antes de realizar cualquier cambio.</p>
                 </div>
                 <button onclick="verificarEImportarLote()" class="w-full bg-indigo-700 text-white text-xs py-3 rounded font-bold hover:bg-indigo-800 transition shadow">
                     🔍 Verificar y Procesar Lote de Estudiantes
                 </button>
             </div>
 
-            <!-- VISTA C: TABLA CRUD / EDICIÓN -->
+            <!-- VISTA C: TABLA CRUD -->
             <div id="vistaCrud" class="hidden space-y-4">
                 <div class="flex justify-between items-center">
                     <span class="text-xs text-slate-500 font-semibold" id="lblTotalAlumnos">Mostrando listado de estudiantes inscritos:</span>
@@ -214,7 +222,7 @@
             document.getElementById('userInfo').innerText = `Usuario: ${email}`;
             document.getElementById('lblRol').innerText = rolTexto.toUpperCase();
 
-            cargarGradosEnSelect();
+            cargarCatalogosSelects();
         }
 
         async function cerrarSesion() {
@@ -229,22 +237,43 @@
             const { error } = await supabaseClient.from('grados').insert([{ nombre_grado: nom }]);
             if(error) alert("Error al guardar: " + error.message);
             else { 
-                alert("✅ Grado guardado exitosamente en Supabase"); 
+                alert("✅ Grado guardado exitosamente"); 
                 document.getElementById('inputGrado').value = ''; 
-                cargarGradosEnSelect();
+                cargarCatalogosSelects();
             }
         }
 
-        async function cargarGradosEnSelect() {
-            const { data, error } = await supabaseClient.from('grados').select('id, nombre_grado').order('nombre_grado');
-            const select = document.getElementById('selectGradoEstudiante');
+        async function guardarSeccion() {
+            const nom = document.getElementById('inputSeccion').value.trim();
+            if(!nom) return alert("Escriba el nombre de la sección");
             
-            if (error) return console.error("Error cargando grados:", error);
+            const { error } = await supabaseClient.from('secciones').insert([{ nombre_seccion: nom }]);
+            if(error) alert("Error al guardar: " + error.message);
+            else { 
+                alert("✅ Sección guardada exitosamente"); 
+                document.getElementById('inputSeccion').value = ''; 
+                cargarCatalogosSelects();
+            }
+        }
 
-            select.innerHTML = '<option value="">Seleccione Grado</option>';
-            if (data) {
-                data.forEach(g => {
-                    select.innerHTML += `<option value="${g.id}">${g.nombre_grado}</option>`;
+        async function cargarCatalogosSelects() {
+            // Cargar Grados
+            const { data: grados } = await supabaseClient.from('grados').select('id, nombre_grado').order('nombre_grado');
+            const selGrado = document.getElementById('selectGradoEstudiante');
+            selGrado.innerHTML = '<option value="">Seleccione Grado</option>';
+            if (grados) {
+                grados.forEach(g => {
+                    selGrado.innerHTML += `<option value="${g.id}">${g.nombre_grado}</option>`;
+                });
+            }
+
+            // Cargar Secciones
+            const { data: secciones } = await supabaseClient.from('secciones').select('id, nombre_seccion').order('nombre_seccion');
+            const selSeccion = document.getElementById('selectSeccionEstudiante');
+            selSeccion.innerHTML = '<option value="">Seleccione Sección</option>';
+            if (secciones) {
+                secciones.forEach(s => {
+                    selSeccion.innerHTML += `<option value="${s.id}">${s.nombre_seccion}</option>`;
                 });
             }
         }
@@ -258,7 +287,6 @@
             else { alert("✅ Asignatura guardada exitosamente"); document.getElementById('inputMateria').value = ''; }
         }
 
-        // Control de Pestañas
         function cambiarModoEstudiante(modo) {
             document.getElementById('vistaIndividual').classList.add('hidden');
             document.getElementById('vistaMasiva').classList.add('hidden');
@@ -281,27 +309,16 @@
             }
         }
 
-        async function obtenerSeccionId() {
-            const nombreSeccion = document.getElementById('selectSeccionEstudiante').value;
-            let { data: seccData } = await supabaseClient.from('secciones').select('id').eq('nombre_seccion', nombreSeccion).maybeSingle();
-            if (!seccData) {
-                let { data: nuevaSecc } = await supabaseClient.from('secciones').insert([{ nombre_seccion: nombreSeccion }]).select('id').single();
-                return nuevaSecc.id;
-            }
-            return seccData.id;
-        }
-
         async function guardarEstudianteIndividual() {
             const gradoId = document.getElementById('selectGradoEstudiante').value;
+            const seccionId = document.getElementById('selectSeccionEstudiante').value;
             const clave = document.getElementById('indClave').value;
             const apellidos = document.getElementById('indApellidos').value.trim();
             const nombres = document.getElementById('indNombres').value.trim();
 
-            if(!gradoId || !clave || !apellidos || !nombres) {
-                return alert("Complete todos los campos y seleccione un grado.");
+            if(!gradoId || !seccionId || !clave || !apellidos || !nombres) {
+                return alert("Complete todos los campos, el grado y la sección.");
             }
-
-            const seccionId = await obtenerSeccionId();
 
             const { error } = await supabaseClient.from('estudiantes').insert([{
                 clave: parseInt(clave),
@@ -327,13 +344,13 @@
 
         async function verificarEImportarLote() {
             const gradoId = document.getElementById('selectGradoEstudiante').value;
+            const seccionId = document.getElementById('selectSeccionEstudiante').value;
             const textoBruto = document.getElementById('txtLoteEstudiantes').value.trim();
 
-            if(!gradoId || !textoBruto) {
-                return alert("Seleccione un grado y pegue el listado.");
+            if(!gradoId || !seccionId || !textoBruto) {
+                return alert("Seleccione un grado, una sección y pegue el listado.");
             }
 
-            const seccionId = await obtenerSeccionId();
             const lineas = textoBruto.split('\n');
             let nuevosAlumnos = [];
 
@@ -353,26 +370,6 @@
 
             if (nuevosAlumnos.length === 0) return alert("No se encontraron registros válidos.");
 
-            // Consultar alumnos existentes en este grado y sección para verificar duplicados
-            const { data: existentes } = await supabaseClient
-                .from('estudiantes')
-                .select('clave, apellidos, nombres')
-                .eq('grado_id', gradoId)
-                .eq('seccion_id', seccionId);
-
-            let duplicados = [];
-            nuevosAlumnos.forEach(nuevo => {
-                let match = existentes.find(e => e.clave === nuevo.clave);
-                if (match) {
-                    duplicados.push(`Clave ${nuevo.clave}: ${match.apellidos} ${match.nombres} ➡️ Se intentó cambiar por: ${nuevo.apellidos} ${nuevo.nombres}`);
-                }
-            });
-
-            if (duplicados.length > 0) {
-                let mensaje = `⚠️ ATENCIÓN: Se encontraron las siguientes claves ya registradas:\n\n` + duplicados.join('\n') + `\n\n¿Desea sobrescribir la información de estos estudiantes y guardar el resto?`;
-                if (!confirm(mensaje)) return;
-            }
-
             const { error } = await supabaseClient
                 .from('estudiantes')
                 .upsert(nuevosAlumnos, { onConflict: 'grado_id,seccion_id,clave' });
@@ -386,11 +383,11 @@
 
         async function cargarEstudiantesCRUD() {
             const gradoId = document.getElementById('selectGradoEstudiante').value;
-            const seccionId = await obtenerSeccionId();
+            const seccionId = document.getElementById('selectSeccionEstudiante').value;
             const tbody = document.getElementById('tablaCrudBody');
 
-            if (!gradoId) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Seleccione un grado para ver el listado.</td></tr>`;
+            if (!gradoId || !seccionId) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Seleccione un grado y una sección para ver el listado.</td></tr>`;
                 return;
             }
 
