@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignación Docente - Beth Shalom / Maya Tikal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cliente Oficial de Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+    <header class="bg-indigo-900 text-white shadow-md p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="../assets/BS_Logo_3D.png" alt="Logo" class="w-10 h-10 object-contain">
+                <div>
+                    <h1 class="text-base font-bold">Liceo Cristiano "Beth Shalom" / Maya Tikal</h1>
+                    <p class="text-xs text-indigo-200">Módulo de Asignación Docente y Carga Académica</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+                <a href="dashboard.html" class="bg-indigo-800 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded shadow transition font-bold">
+                    🏠 Volver al Dashboard
+                </a>
+                <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded shadow transition font-bold">
+                    🔒 Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="max-w-5xl mx-auto p-6 w-full flex-1 space-y-6">
+        
+        <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-extrabold text-slate-800">Carga Académica y Asignación de Cursos</h2>
+            <span id="userInfo" class="text-xs font-semibold bg-white px-3 py-1.5 rounded-lg border shadow-sm">Cargando usuario...</span>
+        </div>
+
+        <!-- TARJETA CONTENEDORA -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            
+            <!-- Formulario de Asignación -->
+            <div class="space-y-4 bg-slate-50 p-4 rounded-xl border">
+                <h3 class="font-bold text-indigo-900 text-sm uppercase">Vincular Docente + Grado + Asignatura</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Docente</label>
+                        <select id="selectDocente" class="w-full border border-slate-300 p-2.5 text-sm rounded-lg outline-none bg-white">
+                            <option value="">Cargando docentes...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Grado</label>
+                        <select id="selectGrado" class="w-full border border-slate-300 p-2.5 text-sm rounded-lg outline-none bg-white">
+                            <option value="">Cargando grados...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Asignatura</label>
+                        <select id="selectAsignatura" class="w-full border border-slate-300 p-2.5 text-sm rounded-lg outline-none bg-white">
+                            <option value="">Cargando asignaturas...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="guardarAsignacionDocente()" class="w-full bg-indigo-900 hover:bg-indigo-800 text-white text-xs py-3 rounded-lg font-bold transition shadow">
+                    + Registrar Asignación Académica
+                </button>
+            </div>
+
+            <!-- Tabla de Carga Académica Actual -->
+            <div class="space-y-2">
+                <p class="text-xs font-bold text-slate-500 uppercase">Listado de Carga Académica Asignada:</p>
+                <div class="overflow-x-auto border rounded-xl">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 border-b text-xs uppercase text-slate-600">
+                            <tr>
+                                <th class="p-3">Docente</th>
+                                <th class="p-3">Grado</th>
+                                <th class="p-3">Asignatura / Curso</th>
+                                <th class="p-3 text-center w-24">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCargaAcademica">
+                            <tr><td colspan="4" class="p-4 text-center text-slate-400">Cargando asignaciones...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- SCRIPTS DE SEGURIDAD Y LÓGICA -->
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const perfil = await verificarAccesoPorRol(['admin', 'director']);
+            if (perfil) {
+                document.getElementById('userInfo').innerText = `Usuario: ${perfil.nombre_completo || perfil.rol}`;
+                await cargarSelectsDocentesYCatalogos();
+                await cargarTablaCargaAcademica();
+            }
+        });
+
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
+            window.location.href = '../index.html';
+        }
+
+        async function cargarSelectsDocentesYCatalogos() {
+            // 1. Cargar Docentes (usuarios con rol 'docente')
+            const { data: docentes, error: errDoc } = await supabaseClient
+                .from('perfiles_usuarios')
+                .select('id, nombre_completo, rol')
+                .eq('rol', 'docente');
+
+            const selDocente = document.getElementById('selectDocente');
+            if (errDoc) { console.error(errDoc); selDocente.innerHTML = '<option value="">Error al cargar docentes</option>'; }
+            else {
+                selDocente.innerHTML = docentes && docentes.length > 0
+                    ? '<option value="">Seleccione Docente</option>' + docentes.map(d => `<option value="${d.id}">${d.nombre_completo || 'Docente sin nombre'}</option>`).join('')
+                    : '<option value="">No hay docentes registrados</option>';
+            }
+
+            // 2. Cargar Grados
+            const { data: grados } = await supabaseClient.from('grados').select('id, nombre_grado').order('nombre_grado');
+            const selGrado = document.getElementById('selectGrado');
+            selGrado.innerHTML = grados && grados.length > 0
+                ? '<option value="">Seleccione Grado</option>' + grados.map(g => `<option value="${g.id}">${g.nombre_grado}</option>`).join('')
+                : '<option value="">No hay grados</option>';
+
+            // 3. Cargar Asignaturas
+            const { data: asignaturas } = await supabaseClient.from('asignaturas').select('id, nombre_asignatura').order('nombre_asignatura');
+            const selAsig = document.getElementById('selectAsignatura');
+            selAsig.innerHTML = asignaturas && asignaturas.length > 0
+                ? '<option value="">Seleccione Asignatura</option>' + asignaturas.map(a => `<option value="${a.id}">${a.nombre_asignatura}</option>`).join('')
+                : '<option value="">No hay asignaturas</option>';
+        }
+
+        async function guardarAsignacionDocente() {
+            const usuario_id = document.getElementById('selectDocente').value;
+            const grado_id = document.getElementById('selectGrado').value;
+            const asignatura_id = document.getElementById('selectAsignatura').value;
+
+            if (!usuario_id || !grado_id || !asignatura_id) {
+                return alert("Por favor seleccione el docente, el grado y la asignatura.");
+            }
+
+            const { error } = await supabaseClient.from('asignacion_docente').insert([{
+                usuario_id, grado_id, asignatura_id
+            }]);
+
+            if (error) {
+                if(error.code === '23505') {
+                    alert("⚠️ Esta asignación ya existe en el sistema para este docente.");
+                } else {
+                    alert("Error: " + error.message);
+                }
+            } else {
+                alert("✅ Asignación académica guardada con éxito.");
+                cargarTablaCargaAcademica();
+            }
+        }
+
+        async function cargarTablaCargaAcademica() {
+            const tbody = document.getElementById('tablaCargaAcademica');
+            
+            const { data, error } = await supabaseClient
+                .from('asignacion_docente')
+                .select(`
+                    id,
+                    usuario_id,
+                    perfiles_usuarios(nombre_completo),
+                    grados(nombre_grado),
+                    asignaturas(nombre_asignatura)
+                `);
+
+            if (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Error al cargar la carga académica.</td></tr>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No hay asignaciones académicas registradas.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const nombreDocente = item.perfiles_usuarios ? item.perfiles_usuarios.nombre_completo : 'Docente no encontrado';
+                const nombreGrado = item.grados ? item.grados.nombre_grado : 'Grado no encontrado';
+                const nombreAsig = item.asignaturas ? item.asignaturas.nombre_asignatura : 'Asignatura no encontrada';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-3 font-semibold text-slate-800">${nombreDocente}</td>
+                        <td class="p-3 text-slate-700">${nombreGrado}</td>
+                        <td class="p-3 text-slate-700">${nombreAsig}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="eliminarAsignacion('${item.id}')" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1.5 rounded font-bold transition">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function eliminarAsignacion(id) {
+            if(!confirm("¿Desea eliminar esta asignación académica?")) return;
+
+            const { error } = await supabaseClient.from('asignacion_docente').delete().eq('id', id);
+            if(error) alert("Error al eliminar: " + error.message);
+            else cargarTablaCargaAcademica();
+        }
+    </script>
+</body>
+</html>
