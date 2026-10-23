@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Académica Segura - Beth Shalom / Maya Tikal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cliente Oficial de Supabase JS (Seguridad por tokens JWT) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- BARRA NAVEGACIÓN (Se muestra solo tras autenticarse) -->
+    <header id="appHeader" class="bg-indigo-900 text-white shadow-md p-4 hidden">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+            <div>
+                <h1 class="text-xl font-bold">Liceo Cristiano "Beth Shalom" / Maya Tikal</h1>
+                <p class="text-xs text-indigo-200">Sistema de Control Académico y Zonogramas Automáticos</p>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+                <span id="userInfo" class="bg-indigo-800 px-3 py-1 rounded-full text-xs font-semibold"></span>
+                <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded shadow transition">
+                    🔒 Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- PANTALLA DE LOGIN SEGURO -->
+    <section id="secLogin" class="flex-1 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-indigo-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-2 shadow-inner">
+                    🛡️
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-800">Acceso Institucional</h2>
+                <p class="text-xs text-slate-500">Inicie sesión con sus credenciales autorizadas</p>
+            </div>
+
+            <!-- Alerta de Error -->
+            <div id="errorAlert" class="hidden mb-4 p-3 bg-red-100 border border-red-300 text-red-700 text-xs rounded-lg font-medium"></div>
+
+            <form onsubmit="iniciarSesionSegura(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Correo Electrónico</label>
+                    <input type="email" id="loginEmail" required value="bspamati@gmail.com"
+                        class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="correo@institucion.edu">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required
+                        class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••">
+                </div>
+                <button type="submit" id="btnLogin" class="w-full bg-indigo-900 hover:bg-indigo-800 text-white font-bold py-3 rounded-lg text-sm shadow transition flex justify-center items-center gap-2">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- PANEL PRINCIPAL (ADMINISTRADOR) -->
+    <section id="secAdmin" class="max-w-7xl mx-auto p-6 w-full hidden">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 text-emerald-800 text-sm font-semibold flex items-center gap-2">
+            ✅ Autenticación Cifrada con Éxito. Rol activo: <span id="lblRol" class="underline"></span>
+        </div>
+        
+        <h2 class="text-2xl font-bold mb-4 text-slate-800">Panel de Administración General</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">1. Registro de Grados</h3>
+                <div class="space-y-3">
+                    <input type="text" id="inputGrado" placeholder="Ej: 4to MEIBI" class="w-full border p-2 text-sm rounded">
+                    <button onclick="guardarGrado()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900">
+                        + Registrar Grado
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">2. Asignaturas y Cursos</h3>
+                <div class="space-y-3">
+                    <input type="text" id="inputMateria" placeholder="Ej: Psicopedagogía" class="w-full border p-2 text-sm rounded">
+                    <button onclick="guardarMateria()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900">
+                        + Registrar Asignatura
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">3. Registro de Estudiantes</h3>
+                <div class="space-y-3">
+                    <input type="number" id="estClave" placeholder="Clave" class="w-full border p-2 text-sm rounded">
+                    <input type="text" id="estApellidos" placeholder="Apellidos" class="w-full border p-2 text-sm rounded">
+                    <input type="text" id="estNombres" placeholder="Nombres" class="w-full border p-2 text-sm rounded">
+                    <button onclick="guardarEstudiante()" class="w-full bg-emerald-600 text-white text-xs py-2 rounded font-bold hover:bg-emerald-700">
+                        + Guardar Estudiante
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SCRIPT DE CONEXIÓN CON SUPABASE AUTH -->
+    <script>
+        const SUPABASE_URL = "https://tzjyhuqmhpbgwdbzesyw.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_Oy_I1GmK4d350RvLgrCo0w_IPTEFnej";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function iniciarSesionSegura(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
+            const errorAlert = document.getElementById('errorAlert');
+            const btnLogin = document.getElementById('btnLogin');
+
+            errorAlert.classList.add('hidden');
+            btnLogin.innerText = "Verificando cifrado...";
+            btnLogin.disabled = true;
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                errorAlert.innerText = "❌ Error de ingreso: " + error.message;
+                errorAlert.classList.remove('hidden');
+                btnLogin.innerText = "Ingresar al Sistema";
+                btnLogin.disabled = false;
+                return;
+            }
+
+            const userId = data.user.id;
+            const { data: perfil } = await supabaseClient
+                .from('perfiles_usuarios')
+                .select('rol, nombre_completo')
+                .eq('id', userId)
+                .single();
+
+            document.getElementById('secLogin').classList.add('hidden');
+            document.getElementById('appHeader').classList.remove('hidden');
+            document.getElementById('secAdmin').classList.remove('hidden');
+
+            const rolTexto = perfil ? perfil.rol : 'admin';
+            document.getElementById('userInfo').innerText = `Usuario: ${email}`;
+            document.getElementById('lblRol').innerText = rolTexto.toUpperCase();
+        }
+
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        }
+
+        async function guardarGrado() {
+            const nom = document.getElementById('inputGrado').value;
+            if(!nom) return alert("Escriba el nombre del grado");
+            const { error } = await supabaseClient.from('grados').insert([{ nombre_grado: nom }]);
+            if(error) alert("Error al guardar: " + error.message);
+            else { alert("✅ Grado guardado exitosamente en Supabase"); document.getElementById('inputGrado').value = ''; }
+        }
+
+        async function guardarMateria() {
+            const nom = document.getElementById('inputMateria').value;
+            if(!nom) return alert("Escriba la asignatura");
+            const { error } = await supabaseClient.from('asignaturas').insert([{ nombre_asignatura: nom }]);
+            if(error) alert("Error al guardar: " + error.message);
+            else { alert("✅ Asignatura guardada exitosamente"); document.getElementById('inputMateria').value = ''; }
+        }
+
+        async function guardarEstudiante() {
+            const clave = document.getElementById('estClave').value;
+            const apellidos = document.getElementById('estApellidos').value;
+            const nombres = document.getElementById('estNombres').value;
+            if(!clave || !apellidos || !nombres) return alert("Complete los datos del estudiante");
+
+            const { error } = await supabaseClient.from('estudiantes').insert([{
+                clave: parseInt(clave),
+                apellidos: apellidos,
+                nombres: nombres
+            }]);
+            if(error) alert("Error al guardar: " + error.message);
+            else { alert("✅ Estudiante registrado en Supabase"); }
+        }
+    </script>
+</body>
+</html>
