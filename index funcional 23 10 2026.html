@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Académica Segura - Beth Shalom / Maya Tikal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cliente Oficial de Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- BARRA NAVEGACIÓN -->
+    <header id="appHeader" class="bg-indigo-900 text-white shadow-md p-4 hidden">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+            <div>
+                <h1 class="text-xl font-bold">Liceo Cristiano "Beth Shalom" / Maya Tikal</h1>
+                <p class="text-xs text-indigo-200">Sistema de Control Académico y Zonogramas Automáticos</p>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+                <span id="userInfo" class="bg-indigo-800 px-3 py-1 rounded-full text-xs font-semibold"></span>
+                <button onclick="cerrarSesion()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded shadow transition">
+                    🔒 Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- PANTALLA DE LOGIN SEGURO -->
+    <section id="secLogin" class="flex-1 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-indigo-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-2 shadow-inner">
+                    🛡️
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-800">Acceso Institucional</h2>
+                <p class="text-xs text-slate-500">Inicie sesión con sus credenciales autorizadas</p>
+            </div>
+
+            <div id="errorAlert" class="hidden mb-4 p-3 bg-red-100 border border-red-300 text-red-700 text-xs rounded-lg font-medium"></div>
+
+            <form onsubmit="iniciarSesionSegura(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Correo Electrónico</label>
+                    <input type="email" id="loginEmail" required value="bspamati@gmail.com"
+                        class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required
+                        class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••">
+                </div>
+                <button type="submit" id="btnLogin" class="w-full bg-indigo-900 hover:bg-indigo-800 text-white font-bold py-3 rounded-lg text-sm shadow transition">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- PANEL PRINCIPAL (ADMINISTRADOR) -->
+    <section id="secAdmin" class="max-w-7xl mx-auto p-6 w-full hidden space-y-6">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-800 text-sm font-semibold flex items-center gap-2">
+            ✅ Autenticación Cifrada con Éxito. Rol activo: <span id="lblRol" class="underline"></span>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-slate-800">Panel de Administración General</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- MÓDULO 1: REGISTRO DE GRADOS Y SECCIONES -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <h3 class="font-bold text-indigo-900 border-b pb-2">1. Registro de Grados y Secciones</h3>
+                <div class="space-y-2">
+                    <input type="text" id="inputGrado" placeholder="Ej: 1ro Básico - Sección A" class="w-full border p-2 text-sm rounded outline-none">
+                    <button onclick="guardarGrado()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">+ Registrar Grado</button>
+                </div>
+                <div class="pt-2 border-t">
+                    <p class="text-xs font-bold text-slate-500 mb-1">Grados Registrados:</p>
+                    <div class="max-h-44 overflow-y-auto border rounded p-1">
+                        <table class="w-full text-xs" id="tablaGradosCRUD">
+                            <tbody><tr><td class="p-2 text-center text-slate-400">Cargando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MÓDULO 3: ASIGNATURAS Y CURSOS -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <h3 class="font-bold text-indigo-900 border-b pb-2">3. Registro de Asignaturas y Cursos</h3>
+                <div class="space-y-2">
+                    <input type="text" id="inputMateria" placeholder="Nombre de Asignatura (Ej: Psicopedagogía)" class="w-full border p-2 text-sm rounded outline-none">
+                    <button onclick="guardarMateria()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-950 transition">+ Registrar Asignatura</button>
+                </div>
+                <div class="pt-2 border-t">
+                    <p class="text-xs font-bold text-slate-500 mb-1">Asignaturas Registradas:</p>
+                    <div class="max-h-44 overflow-y-auto border rounded p-1">
+                        <table class="w-full text-xs" id="tablaAsignaturasCRUD">
+                            <tbody><tr><td class="p-2 text-center text-slate-400">Cargando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MÓDULO 2: GESTIÓN DE ESTUDIANTES -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-3 gap-2">
+                <h3 class="font-bold text-indigo-900 text-lg">2. Módulo de Gestión de Estudiantes</h3>
+                <div class="flex gap-2 bg-slate-100 p-1 rounded-lg">
+                    <button onclick="cambiarModoEstudiante('individual')" id="btnTabInd" class="px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow">Individual</button>
+                    <button onclick="cambiarModoEstudiante('masivo')" id="btnTabMas" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">Carga Masiva</button>
+                    <button onclick="cambiarModoEstudiante('crud')" id="btnTabCrud" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">Listado por Grado</button>
+                    <button onclick="cambiarModoEstudiante('buscador')" id="btnTabBuscador" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">🔍 Buscador y CRUD</button>
+                </div>
+            </div>
+
+            <!-- VISTA A: REGISTRO INDIVIDUAL -->
+            <div id="vistaIndividual" class="space-y-3">
+                <div class="mb-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado</label>
+                    <select id="selectGradoIndividual" class="w-full border p-2 text-sm rounded outline-none bg-white">
+                        <option value="">Seleccione Grado</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="number" id="indClave" placeholder="Clave (Ej: 1)" class="border p-2 text-sm rounded outline-none">
+                    <input type="text" id="indApellidos" placeholder="Apellidos" class="border p-2 text-sm rounded outline-none">
+                    <input type="text" id="indNombres" placeholder="Nombres" class="border p-2 text-sm rounded outline-none">
+                </div>
+                <button onclick="guardarEstudianteIndividual()" class="w-full bg-emerald-600 text-white text-xs py-2.5 rounded font-bold hover:bg-emerald-700 transition">
+                    + Guardar Estudiante Individual
+                </button>
+            </div>
+
+            <!-- VISTA B: CARGA MASIVA -->
+            <div id="vistaMasiva" class="space-y-3 hidden">
+                <div class="mb-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado</label>
+                    <select id="selectGradoMasivo" class="w-full border p-2 text-sm rounded outline-none bg-white">
+                        <option value="">Seleccione Grado</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pegar Listado (Formato: Clave \t Apellidos \t Nombres)</label>
+                    <textarea id="txtLoteEstudiantes" rows="5" placeholder="Ejemplo:&#10;1	Pérez Gómez	Juan Carlos&#10;2	López Ruano	María Fernanda" class="w-full border p-3 text-sm rounded outline-none font-mono"></textarea>
+                </div>
+                <button onclick="verificarEImportarLote()" class="w-full bg-indigo-700 text-white text-xs py-3 rounded font-bold hover:bg-indigo-800 transition shadow">
+                    🔍 Verificar y Procesar Lote de Estudiantes
+                </button>
+            </div>
+
+            <!-- VISTA C: TABLA POR GRADO -->
+            <div id="vistaCrud" class="hidden space-y-4">
+                <div class="mb-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado</label>
+                    <select id="selectGradoFiltro" onchange="cargarEstudiantesCRUD()" class="w-full border p-2 text-sm rounded outline-none bg-white">
+                        <option value="">Seleccione Grado</option>
+                    </select>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-500 font-semibold" id="lblTotalAlumnos">Mostrando listado de estudiantes inscritos:</span>
+                    <button onclick="cargarEstudiantesCRUD()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-1 rounded font-bold">🔄 Recargar</button>
+                </div>
+                <div class="overflow-x-auto border rounded-lg">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 border-b text-xs uppercase text-slate-600">
+                            <tr>
+                                <th class="p-3 w-16 text-center">Clave</th>
+                                <th class="p-3">Apellidos</th>
+                                <th class="p-3">Nombres</th>
+                                <th class="p-3 text-center w-28">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCrudBody">
+                            <tr><td colspan="4" class="p-4 text-center text-slate-400">Seleccione un grado para ver el listado.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VISTA D: BUSCADOR GENERAL Y CRUD -->
+            <div id="vistaBuscador" class="hidden space-y-4">
+                <div class="bg-slate-50 p-4 rounded-lg border space-y-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase">Buscar Estudiante por Nombre, Apellido o Clave</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="inputBusquedaGlobal" placeholder="Escriba parte del nombre o apellido..." class="flex-1 border p-2.5 text-sm rounded outline-none bg-white">
+                        <button onclick="buscarEstudiantesGlobal()" class="bg-indigo-900 text-white px-5 py-2.5 rounded text-xs font-bold hover:bg-indigo-800 transition">🔍 Buscar</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border rounded-lg">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 border-b text-xs uppercase text-slate-600">
+                            <tr>
+                                <th class="p-3">Grado</th>
+                                <th class="p-3 w-16 text-center">Clave</th>
+                                <th class="p-3">Apellidos</th>
+                                <th class="p-3">Nombres</th>
+                                <th class="p-3 text-center w-28">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaBuscadorBody">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-400">Use el buscador superior para encontrar estudiantes.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCRIPT DE CONEXIÓN Y LÓGICA -->
+    <script>
+        const SUPABASE_URL = "https://tzjyhuqmhpbgwdbzesyw.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_Oy_I1GmK4d350RvLgrCo0w_IPTEFnej";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function iniciarSesionSegura(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
+            const errorAlert = document.getElementById('errorAlert');
+            const btnLogin = document.getElementById('btnLogin');
+
+            errorAlert.classList.add('hidden');
+            btnLogin.innerText = "Verificando cifrado...";
+            btnLogin.disabled = true;
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                errorAlert.innerText = "❌ Error de ingreso: " + error.message;
+                errorAlert.classList.remove('hidden');
+                btnLogin.innerText = "Ingresar al Sistema";
+                btnLogin.disabled = false;
+                return;
+            }
+
+            const userId = data.user.id;
+            const { data: perfil } = await supabaseClient
+                .from('perfiles_usuarios')
+                .select('rol, nombre_completo')
+                .eq('id', userId)
+                .single();
+
+            document.getElementById('secLogin').classList.add('hidden');
+            document.getElementById('appHeader').classList.remove('hidden');
+            document.getElementById('secAdmin').classList.remove('hidden');
+
+            const rolTexto = perfil ? perfil.rol : 'admin';
+            document.getElementById('userInfo').innerText = `Usuario: ${email}`;
+            document.getElementById('lblRol').innerText = rolTexto.toUpperCase();
+
+            actualizarTodoElPanel();
+        }
+
+        async function cerrarSesion() {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        }
+
+        async function actualizarTodoElPanel() {
+            await cargarCatalogosSelects();
+            await cargarGradosCRUD();
+            await cargarAsignaturasCRUD();
+        }
+
+        // --- MÓDULO 1: GRADOS ---
+        async function guardarGrado() {
+            const nom = document.getElementById('inputGrado').value.trim();
+            if(!nom) return alert("Escriba el nombre del grado");
+            const { error } = await supabaseClient.from('grados').insert([{ nombre_grado: nom }]);
+            if(error) alert("Error: " + error.message);
+            else { 
+                document.getElementById('inputGrado').value = ''; 
+                actualizarTodoElPanel();
+            }
+        }
+
+        async function cargarGradosCRUD() {
+            const { data } = await supabaseClient.from('grados').select('*').order('nombre_grado');
+            const tbody = document.getElementById('tablaGradosCRUD');
+            if(!data || data.length === 0) { tbody.innerHTML = `<tr><td class="p-2 text-slate-400">Sin grados.</td></tr>`; return; }
+            tbody.innerHTML = '';
+            data.forEach(g => {
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-1.5">${g.nombre_grado}</td>
+                        <td class="p-1.5 text-right">
+                            <button onclick="editarGrado('${g.id}', '${g.nombre_grado}')" class="text-amber-600 font-bold px-1">✏️</button>
+                            <button onclick="eliminarGrado('${g.id}')" class="text-red-600 font-bold px-1">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function editarGrado(id, actual) {
+            const nuevo = prompt("Modificar nombre del grado:", actual);
+            if(!nuevo || nuevo.trim() === "") return;
+            const { error } = await supabaseClient.from('grados').update({ nombre_grado: nuevo.trim() }).eq('id', id);
+            if(error) alert("Error: " + error.message);
+            else actualizarTodoElPanel();
+        }
+
+        async function eliminarGrado(id) {
+            if(!confirm("⚠️ ¿Desea eliminar este grado?")) return;
+            const { error } = await supabaseClient.from('grados').delete().eq('id', id);
+            if(error) alert("No se puede eliminar: Posee estudiantes registrados.");
+            else actualizarTodoElPanel();
+        }
+
+        // --- MÓDULO 3: ASIGNATURAS ---
+        async function guardarMateria() {
+            const nom = document.getElementById('inputMateria').value.trim();
+            if(!nom) return alert("Escriba la asignatura");
+            const { error } = await supabaseClient.from('asignaturas').insert([{ nombre_asignatura: nom }]);
+            if(error) alert("Error: " + error.message);
+            else { 
+                document.getElementById('inputMateria').value = ''; 
+                actualizarTodoElPanel();
+            }
+        }
+
+        async function cargarAsignaturasCRUD() {
+            const { data } = await supabaseClient.from('asignaturas').select('*').order('nombre_asignatura');
+            const tbody = document.getElementById('tablaAsignaturasCRUD');
+            if(!data || data.length === 0) { tbody.innerHTML = `<tr><td class="p-2 text-slate-400">Sin asignaturas.</td></tr>`; return; }
+            tbody.innerHTML = '';
+            data.forEach(a => {
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-1.5">${a.nombre_asignatura}</td>
+                        <td class="p-1.5 text-right">
+                            <button onclick="editarAsignatura('${a.id}', '${a.nombre_asignatura}')" class="text-amber-600 font-bold px-1">✏️</button>
+                            <button onclick="eliminarAsignatura('${a.id}')" class="text-red-600 font-bold px-1">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function editarAsignatura(id, actual) {
+            const nuevo = prompt("Modificar nombre de asignatura:", actual);
+            if(!nuevo || nuevo.trim() === "") return;
+            const { error } = await supabaseClient.from('asignaturas').update({ nombre_asignatura: nuevo.trim() }).eq('id', id);
+            if(error) alert("Error: " + error.message);
+            else actualizarTodoElPanel();
+        }
+
+        async function eliminarAsignatura(id) {
+            if(!confirm("¿Eliminar esta asignatura?")) return;
+            const { error } = await supabaseClient.from('asignaturas').delete().eq('id', id);
+            if(error) alert("Error al eliminar.");
+            else actualizarTodoElPanel();
+        }
+
+        async function cargarCatalogosSelects() {
+            const { data: grados } = await supabaseClient.from('grados').select('id, nombre_grado').order('nombre_grado');
+            
+            const selInd = document.getElementById('selectGradoIndividual');
+            const selMas = document.getElementById('selectGradoMasivo');
+            const selFiltro = document.getElementById('selectGradoFiltro');
+
+            const optionsHTML = grados && grados.length > 0 
+                ? '<option value="">Seleccione Grado</option>' + grados.map(g => `<option value="${g.id}">${g.nombre_grado}</option>`).join('')
+                : '<option value="">No hay grados registrados</option>';
+
+            selInd.innerHTML = optionsHTML;
+            selMas.innerHTML = optionsHTML;
+            selFiltro.innerHTML = optionsHTML;
+        }
+
+        // --- MÓDULO 2: ESTUDIANTES ---
+        function cambiarModoEstudiante(modo) {
+            document.getElementById('vistaIndividual').classList.add('hidden');
+            document.getElementById('vistaMasiva').classList.add('hidden');
+            document.getElementById('vistaCrud').classList.add('hidden');
+            document.getElementById('vistaBuscador').classList.add('hidden');
+
+            document.getElementById('btnTabInd').className = "px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200";
+            document.getElementById('btnTabMas').className = "px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200";
+            document.getElementById('btnTabCrud').className = "px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200";
+            document.getElementById('btnTabBuscador').className = "px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200";
+
+            if (modo === 'individual') {
+                document.getElementById('vistaIndividual').classList.remove('hidden');
+                document.getElementById('btnTabInd').className = "px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow";
+            } else if (modo === 'masivo') {
+                document.getElementById('vistaMasiva').classList.remove('hidden');
+                document.getElementById('btnTabMas').className = "px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow";
+            } else if (modo === 'crud') {
+                document.getElementById('vistaCrud').classList.remove('hidden');
+                document.getElementById('btnTabCrud').className = "px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow";
+                cargarEstudiantesCRUD();
+            } else if (modo === 'buscador') {
+                document.getElementById('vistaBuscador').classList.remove('hidden');
+                document.getElementById('btnTabBuscador').className = "px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow";
+            }
+        }
+
+        async function guardarEstudianteIndividual() {
+            const gradoId = document.getElementById('selectGradoIndividual').value;
+            const clave = document.getElementById('indClave').value;
+            const apellidos = document.getElementById('indApellidos').value.trim();
+            const nombres = document.getElementById('indNombres').value.trim();
+
+            if(!gradoId || !clave || !apellidos || !nombres) return alert("Complete todos los campos y seleccione un grado.");
+
+            const { data: existente } = await supabaseClient
+                .from('estudiantes')
+                .select('id, apellidos, nombres')
+                .eq('grado_id', gradoId)
+                .eq('clave', parseInt(clave))
+                .maybeSingle();
+
+            if (existente) {
+                return alert(`❌ ATENCIÓN: La clave ${clave} ya está asignada a: ${existente.apellidos} ${existente.nombres} en este grado.`);
+            }
+
+            const { error } = await supabaseClient.from('estudiantes').insert([{
+                clave: parseInt(clave), apellidos, nombres, grado_id: gradoId
+            }]);
+
+            if(error) alert("Error: " + error.message);
+            else {
+                alert("✅ Estudiante registrado exitosamente");
+                document.getElementById('indClave').value = '';
+                document.getElementById('indApellidos').value = '';
+                document.getElementById('indNombres').value = '';
+            }
+        }
+
+        async function verificarEImportarLote() {
+            const gradoId = document.getElementById('selectGradoMasivo').value;
+            const textoBruto = document.getElementById('txtLoteEstudiantes').value.trim();
+
+            if(!gradoId || !textoBruto) return alert("Seleccione un grado y pegue el listado.");
+
+            const lineas = textoBruto.split('\n');
+            let nuevosAlumnos = [];
+
+            for (let linea of lineas) {
+                linea = linea.trim();
+                if (!linea) continue;
+                const cols = linea.split(/\t|,/);
+                if (cols.length >= 3) {
+                    let clave = parseInt(cols[0].trim());
+                    let apellidos = cols[1].trim();
+                    let nombres = cols[2].trim();
+                    if (!isNaN(clave) && apellidos && nombres) {
+                        nuevosAlumnos.push({ clave, apellidos, nombres, grado_id: gradoId });
+                    }
+                }
+            }
+
+            if (nuevosAlumnos.length === 0) return alert("No se encontraron registros válidos.");
+
+            const { data: existentes } = await supabaseClient
+                .from('estudiantes')
+                .select('clave, apellidos, nombres')
+                .eq('grado_id', gradoId);
+
+            let duplicados = [];
+            nuevosAlumnos.forEach(nuevo => {
+                let match = existentes.find(e => e.clave === nuevo.clave);
+                if (match) {
+                    duplicados.push(`Clave ${nuevo.clave}: Ya existe (${match.apellidos} ${match.nombres}) ➡️ Se actualizará con: ${nuevo.apellidos} ${nuevo.nombres}`);
+                }
+            });
+
+            if (duplicados.length > 0) {
+                let mensaje = `⚠️ ATENCIÓN: Se encontraron las siguientes claves ya registradas:\n\n` + duplicados.join('\n') + `\n\n¿Desea actualizar la información de estos alumnos y continuar?`;
+                if (!confirm(mensaje)) return;
+            }
+
+            const { error } = await supabaseClient.from('estudiantes').upsert(nuevosAlumnos, { onConflict: 'grado_id,clave' });
+
+            if (error) alert("Error al importar: " + error.message);
+            else {
+                alert(`¡Éxito! Lote de ${nuevosAlumnos.length} estudiantes procesado correctamente.`);
+                document.getElementById('txtLoteEstudiantes').value = '';
+            }
+        }
+
+        async function cargarEstudiantesCRUD() {
+            const gradoId = document.getElementById('selectGradoFiltro').value;
+            const tbody = document.getElementById('tablaCrudBody');
+
+            if (!gradoId) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Seleccione un grado para ver el listado.</td></tr>`;
+                return;
+            }
+
+            const { data, error } = await supabaseClient.from('estudiantes').select('*').eq('grado_id', gradoId).order('clave', { ascending: true });
+
+            if (error) { console.error(error); return; }
+
+            document.getElementById('lblTotalAlumnos').innerText = `Total de estudiantes en este listado: ${data.length}`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No hay estudiantes registrados en este grado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(est => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50" id="row_${est.id}">
+                        <td class="p-3 text-center font-bold">${est.clave}</td>
+                        <td class="p-3" id="ap_${est.id}">${est.apellidos}</td>
+                        <td class="p-3" id="nom_${est.id}">${est.nombres}</td>
+                        <td class="p-3 text-center flex justify-center gap-2">
+                            <button onclick="habilitarEdicionEstudiante('${est.id}', ${est.clave}, '${est.apellidos}', '${est.nombres}')" class="bg-amber-500 text-white text-xs px-2 py-1 rounded font-bold hover:bg-amber-600">✏️</button>
+                            <button onclick="eliminarEstudiante('${est.id}')" class="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold hover:bg-red-700">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function habilitarEdicionEstudiante(id, clave, apellidos, nombres) {
+            const row = document.getElementById(`row_${id}`);
+            row.innerHTML = `
+                <td class="p-2 text-center font-bold">${clave}</td>
+                <td class="p-2"><input type="text" id="editAp_${id}" value="${apellidos}" class="w-full border p-1 text-sm rounded"></td>
+                <td class="p-2"><input type="text" id="editNom_${id}" value="${nombres}" class="w-full border p-1 text-sm rounded"></td>
+                <td class="p-2 text-center flex justify-center gap-2">
+                    <button onclick="guardarEdicionEstudiante('${id}')" class="bg-emerald-600 text-white text-xs px-2 py-1 rounded font-bold">💾</button>
+                    <button onclick="cargarEstudiantesCRUD()" class="bg-slate-400 text-white text-xs px-2 py-1 rounded font-bold">❌</button>
+                </td>
+            `;
+        }
+
+        async function guardarEdicionEstudiante(id) {
+            const apellidos = document.getElementById(`editAp_${id}`).value.trim();
+            const nombres = document.getElementById(`editNom_${id}`).value.trim();
+            if(!apellidos || !nombres) return alert("Los campos no pueden estar vacíos.");
+
+            const { error } = await supabaseClient.from('estudiantes').update({ apellidos, nombres }).eq('id', id);
+            if(error) alert("Error al actualizar: " + error.message);
+            else { alert("✅ Estudiante actualizado con éxito"); cargarEstudiantesCRUD(); }
+        }
+
+        async function eliminarEstudiante(id) {
+            if(!confirm("¿Está seguro de eliminar a este estudiante?")) return;
+            const { error } = await supabaseClient.from('estudiantes').delete().eq('id', id);
+            if(error) alert("Error al eliminar: " + error.message);
+            else { alert("🗑️ Estudiante eliminado"); cargarEstudiantesCRUD(); }
+        }
+
+        // --- BUSCADOR GLOBAL Y CRUD DE ESTUDIANTES ---
+        async function buscarEstudiantesGlobal() {
+            const query = document.getElementById('inputBusquedaGlobal').value.trim();
+            const tbody = document.getElementById('tablaBuscadorBody');
+
+            if (!query) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Escriba algo en el buscador para iniciar.</td></tr>`;
+                return;
+            }
+
+            // Consultar estudiantes que coincidan en nombre o apellido, trayendo el nombre del grado relacionado
+            const { data, error } = await supabaseClient
+                .from('estudiantes')
+                .select('id, clave, apellidos, nombres, grado_id, grados(nombre_grado)')
+                .or(`apellidos.ilike.%${query}%,nombres.ilike.%${query}%`)
+                .order('apellidos');
+
+            if (error) {
+                console.error(error);
+                alert("Error en la búsqueda.");
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No se encontraron estudiantes con ese criterio.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(est => {
+                const nombreGrado = est.grados ? est.grados.nombre_grado : 'Sin Grado';
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50" id="searchRow_${est.id}">
+                        <td class="p-3 font-semibold text-indigo-900">${nombreGrado}</td>
+                        <td class="p-3 text-center font-bold">${est.clave}</td>
+                        <td class="p-3" id="searchAp_${est.id}">${est.apellidos}</td>
+                        <td class="p-3" id="searchNom_${est.id}">${est.nombres}</td>
+                        <td class="p-3 text-center flex justify-center gap-2">
+                            <button onclick="habilitarEdicionGlobal('${est.id}', '${est.apellidos}', '${est.nombres}')" class="bg-amber-500 text-white text-xs px-2 py-1 rounded font-bold hover:bg-amber-600">✏️</button>
+                            <button onclick="eliminarEstudianteGlobal('${est.id}')" class="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold hover:bg-red-700">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function habilitarEdicionGlobal(id, apellidos, nombres) {
+            const row = document.getElementById(`searchRow_${id}`);
+            // Mantenemos las celdas de grado, clave y ponemos inputs en apellidos y nombres
+            const gradoTexto = row.children[0].innerText;
+            const claveTexto = row.children[1].innerText;
+
+            row.innerHTML = `
+                <td class="p-2 font-semibold text-indigo-900">${gradoTexto}</td>
+                <td class="p-2 text-center font-bold">${claveTexto}</td>
+                <td class="p-2"><input type="text" id="globalEditAp_${id}" value="${apellidos}" class="w-full border p-1 text-sm rounded"></td>
+                <td class="p-2"><input type="text" id="globalEditNom_${id}" value="${nombres}" class="w-full border p-1 text-sm rounded"></td>
+                <td class="p-2 text-center flex justify-center gap-2">
+                    <button onclick="guardarEdicionGlobal('${id}')" class="bg-emerald-600 text-white text-xs px-2 py-1 rounded font-bold">💾</button>
+                    <button onclick="buscarEstudiantesGlobal()" class="bg-slate-400 text-white text-xs px-2 py-1 rounded font-bold">❌</button>
+                </td>
+            `;
+        }
+
+        async function guardarEdicionGlobal(id) {
+            const apellidos = document.getElementById(`globalEditAp_${id}`).value.trim();
+            const nombres = document.getElementById(`globalEditNom_${id}`).value.trim();
+            if(!apellidos || !nombres) return alert("Los campos no pueden estar vacíos.");
+
+            const { error } = await supabaseClient.from('estudiantes').update({ apellidos, nombres }).eq('id', id);
+            if(error) alert("Error al actualizar: " + error.message);
+            else { alert("✅ Estudiante actualizado con éxito"); buscarEstudiantesGlobal(); }
+        }
+
+        async function eliminarEstudianteGlobal(id) {
+            if(!confirm("¿Está seguro de eliminar a este estudiante?")) return;
+            const { error } = await supabaseClient.from('estudiantes').delete().eq('id', id);
+            if(error) alert("Error al eliminar: " + error.message);
+            else { alert("🗑️ Estudiante eliminado"); buscarEstudiantesGlobal(); }
+        }
+    </script>
+</body>
+</html>
