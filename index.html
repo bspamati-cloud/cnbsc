@@ -72,11 +72,10 @@
                 <h3 class="font-bold text-indigo-900 border-b pb-2">1. Registro de Grados y Secciones</h3>
                 
                 <div class="space-y-2">
-                    <input type="text" id="inputGrado" placeholder="Ej: 1ro Básico - Sección A / 4to MEIBI Única" class="w-full border p-2 text-sm rounded outline-none">
-                    <button onclick="guardarGrado()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">+ Registrar Grado con Sección</button>
+                    <input type="text" id="inputGrado" placeholder="Ej: 1ro Básico - Sección A" class="w-full border p-2 text-sm rounded outline-none">
+                    <button onclick="guardarGrado()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">+ Registrar Grado</button>
                 </div>
 
-                <!-- Tabla CRUD de Grados -->
                 <div class="pt-2 border-t">
                     <p class="text-xs font-bold text-slate-500 mb-1">Grados Registrados:</p>
                     <div class="max-h-44 overflow-y-auto border rounded p-1">
@@ -96,7 +95,6 @@
                     <button onclick="guardarMateria()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-950 transition">+ Registrar Asignatura</button>
                 </div>
 
-                <!-- Tabla CRUD de Asignaturas -->
                 <div class="pt-2 border-t">
                     <p class="text-xs font-bold text-slate-500 mb-1">Asignaturas Registradas:</p>
                     <div class="max-h-44 overflow-y-auto border rounded p-1">
@@ -115,13 +113,12 @@
                 <div class="flex gap-2 bg-slate-100 p-1 rounded-lg">
                     <button onclick="cambiarModoEstudiante('individual')" id="btnTabInd" class="px-4 py-1.5 text-xs font-bold rounded-md bg-indigo-900 text-white shadow">Registro Individual</button>
                     <button onclick="cambiarModoEstudiante('masivo')" id="btnTabMas" class="px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">Carga Masiva (Excel)</button>
-                    <button onclick="cambiarModoEstudiante('crud')" id="btnTabCrud" class="px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">Listado y CRUD</button>
+                    <button onclick="cambiarModoEstudiante('crud')" id="btnTabCrud" class="px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:bg-slate-200">Listado y Consulta</button>
                 </div>
             </div>
 
-            <!-- Filtro de Grado y Sección -->
             <div class="mb-4 bg-slate-50 p-4 rounded-lg border">
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado y Sección</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado</label>
                 <select id="selectGradoEstudiante" onchange="cargarEstudiantesCRUD()" class="w-full border p-2 text-sm rounded outline-none bg-white">
                     <option value="">Seleccione Grado</option>
                 </select>
@@ -150,7 +147,7 @@
                 </button>
             </div>
 
-            <!-- VISTA C: TABLA CRUD DE ESTUDIANTES -->
+            <!-- VISTA C: TABLA DE CONSULTA -->
             <div id="vistaCrud" class="hidden space-y-4">
                 <div class="flex justify-between items-center">
                     <span class="text-xs text-slate-500 font-semibold" id="lblTotalAlumnos">Mostrando listado de estudiantes inscritos:</span>
@@ -163,7 +160,7 @@
                                 <th class="p-3 w-16 text-center">Clave</th>
                                 <th class="p-3">Apellidos</th>
                                 <th class="p-3">Nombres</th>
-                                <th class="p-3 text-center w-28">Acciones</th>
+                                <th class="p-3 text-center w-28">Estado</th>
                             </tr>
                         </thead>
                         <tbody id="tablaCrudBody">
@@ -193,10 +190,7 @@
             btnLogin.innerText = "Verificando cifrado...";
             btnLogin.disabled = true;
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
             if (error) {
                 errorAlert.innerText = "❌ Error de ingreso: " + error.message;
@@ -235,10 +229,10 @@
             await cargarAsignaturasCRUD();
         }
 
-        // --- MÓDULO 1: GESTIÓN DE GRADOS Y SECCIONES ---
+        // --- MÓDULO 1: GRADOS ---
         async function guardarGrado() {
             const nom = document.getElementById('inputGrado').value.trim();
-            if(!nom) return alert("Escriba el nombre del grado con su sección");
+            if(!nom) return alert("Escriba el nombre del grado");
             const { error } = await supabaseClient.from('grados').insert([{ nombre_grado: nom }]);
             if(error) alert("Error: " + error.message);
             else { 
@@ -255,7 +249,7 @@
             data.forEach(g => {
                 tbody.innerHTML += `
                     <tr class="border-b">
-                        <td class="p-1.5" id="lblGrado_${g.id}">${g.nombre_grado}</td>
+                        <td class="p-1.5">${g.nombre_grado}</td>
                         <td class="p-1.5 text-right">
                             <button onclick="editarGrado('${g.id}', '${g.nombre_grado}')" class="text-amber-600 font-bold px-1">✏️</button>
                             <button onclick="eliminarGrado('${g.id}')" class="text-red-600 font-bold px-1">🗑️</button>
@@ -266,7 +260,7 @@
         }
 
         async function editarGrado(id, actual) {
-            const nuevo = prompt("Modificar nombre del grado y sección:", actual);
+            const nuevo = prompt("Modificar nombre del grado:", actual);
             if(!nuevo || nuevo.trim() === "") return;
             const { error } = await supabaseClient.from('grados').update({ nombre_grado: nuevo.trim() }).eq('id', id);
             if(error) alert("Error: " + error.message);
@@ -274,13 +268,13 @@
         }
 
         async function eliminarGrado(id) {
-            if(!confirm("⚠️ ¿Desea eliminar este grado? Si tiene estudiantes asociados, la base de datos protegerá la información impidiendo borrarlo accidentalmente.")) return;
+            if(!confirm("⚠️ ¿Desea eliminar este grado?")) return;
             const { error } = await supabaseClient.from('grados').delete().eq('id', id);
-            if(error) alert("No se puede eliminar: Este grado posee estudiantes registrados. Elimine o reasigne los estudiantes primero.");
+            if(error) alert("No se puede eliminar: Posee estudiantes registrados.");
             else actualizarTodoElPanel();
         }
 
-        // --- MÓDULO 3: GESTIÓN DE ASIGNATURAS ---
+        // --- MÓDULO 3: ASIGNATURAS ---
         async function guardarMateria() {
             const nom = document.getElementById('inputMateria').value.trim();
             if(!nom) return alert("Escriba la asignatura");
@@ -325,7 +319,6 @@
             else actualizarTodoElPanel();
         }
 
-        // --- SELECTORES GENERALES ---
         async function cargarCatalogosSelects() {
             const { data: grados } = await supabaseClient.from('grados').select('id, nombre_grado').order('nombre_grado');
             const selGrado = document.getElementById('selectGradoEstudiante');
@@ -333,7 +326,7 @@
             if (grados) grados.forEach(g => selGrado.innerHTML += `<option value="${g.id}">${g.nombre_grado}</option>`);
         }
 
-        // --- MÓDULO 2: GESTIÓN DE ESTUDIANTES ---
+        // --- MÓDULO 2: ESTUDIANTES ---
         function cambiarModoEstudiante(modo) {
             document.getElementById('vistaIndividual').classList.add('hidden');
             document.getElementById('vistaMasiva').classList.add('hidden');
@@ -362,18 +355,26 @@
             const apellidos = document.getElementById('indApellidos').value.trim();
             const nombres = document.getElementById('indNombres').value.trim();
 
-            if(!gradoId || !clave || !apellidos || !nombres) {
-                return alert("Complete todos los campos y seleccione un grado.");
+            if(!gradoId || !clave || !apellidos || !nombres) return alert("Complete todos los campos y seleccione un grado.");
+
+            // Verificar si ya existe la clave
+            const { data: existente } = await supabaseClient
+                .from('estudiantes')
+                .select('id, apellidos, nombres')
+                .eq('grado_id', gradoId)
+                .eq('clave', parseInt(clave))
+                .maybeSingle();
+
+            if (existente) {
+                return alert(`❌ ATENCIÓN: La clave ${clave} ya está asignada a: ${existente.apellidos} ${existente.nombres} en este grado.`);
             }
 
             const { error } = await supabaseClient.from('estudiantes').insert([{
                 clave: parseInt(clave), apellidos, nombres, grado_id: gradoId
             }]);
 
-            if(error) {
-                if(error.message.includes('unique constraint') || error.message.includes('clave')) alert(`❌ La clave ${clave} ya existe en este grado.`);
-                else alert("Error: " + error.message);
-            } else {
+            if(error) alert("Error: " + error.message);
+            else {
                 alert("✅ Estudiante registrado exitosamente");
                 document.getElementById('indClave').value = '';
                 document.getElementById('indApellidos').value = '';
@@ -406,12 +407,37 @@
 
             if (nuevosAlumnos.length === 0) return alert("No se encontraron registros válidos.");
 
+            // 1. Consultar estudiantes existentes en este grado para detectar duplicados antes de insertar
+            const { data: existentes, error: errExist } = await supabaseClient
+                .from('estudiantes')
+                .select('clave, apellidos, nombres')
+                .eq('grado_id', gradoId);
+
+            if (errExist) {
+                console.error(errExist);
+                return alert("Error al verificar duplicados en la base de datos.");
+            }
+
+            let duplicados = [];
+            nuevosAlumnos.forEach(nuevo => {
+                let match = existentes.find(e => e.clave === nuevo.clave);
+                if (match) {
+                    duplicados.push(`Clave ${nuevo.clave}: Ya existe (${match.apellidos} ${match.nombres}) ➡️ Se actualizará con: ${nuevo.apellidos} ${nuevo.nombres}`);
+                }
+            });
+
+            if (duplicados.length > 0) {
+                let mensaje = `⚠️ ATENCIÓN: Se encontraron las siguientes claves ya registradas en este grado:\n\n` + duplicados.join('\n') + `\n\n¿Desea actualizar la información de estos alumnos y continuar?`;
+                if (!confirm(mensaje)) return;
+            }
+
             const { error } = await supabaseClient.from('estudiantes').upsert(nuevosAlumnos, { onConflict: 'grado_id,clave' });
 
             if (error) alert("Error al importar: " + error.message);
             else {
                 alert(`¡Éxito! Lote de ${nuevosAlumnos.length} estudiantes procesado correctamente.`);
                 document.getElementById('txtLoteEstudiantes').value = '';
+                cargarEstudiantesCRUD();
             }
         }
 
@@ -438,47 +464,14 @@
             tbody.innerHTML = '';
             data.forEach(est => {
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-slate-50" id="row_${est.id}">
+                    <tr class="border-b hover:bg-slate-50">
                         <td class="p-3 text-center font-bold">${est.clave}</td>
-                        <td class="p-3" id="ap_${est.id}">${est.apellidos}</td>
-                        <td class="p-3" id="nom_${est.id}">${est.nombres}</td>
-                        <td class="p-3 text-center flex justify-center gap-2">
-                            <button onclick="habilitarEdicion('${est.id}', ${est.clave}, '${est.apellidos}', '${est.nombres}')" class="bg-amber-500 text-white text-xs px-2 py-1 rounded font-bold hover:bg-amber-600">✏️</button>
-                            <button onclick="eliminarEstudiante('${est.id}')" class="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold hover:bg-red-700">🗑️</button>
-                        </td>
+                        <td class="p-3">${est.apellidos}</td>
+                        <td class="p-3">${est.nombres}</td>
+                        <td class="p-3 text-center text-xs text-emerald-600 font-semibold">Registrado</td>
                     </tr>
                 `;
             });
-        }
-
-        function habilitarEdicion(id, clave, apellidos, nombres) {
-            const row = document.getElementById(`row_${id}`);
-            row.innerHTML = `
-                <td class="p-2 text-center font-bold">${clave}</td>
-                <td class="p-2"><input type="text" id="editAp_${id}" value="${apellidos}" class="w-full border p-1 text-sm rounded"></td>
-                <td class="p-2"><input type="text" id="editNom_${id}" value="${nombres}" class="w-full border p-1 text-sm rounded"></td>
-                <td class="p-2 text-center flex justify-center gap-2">
-                    <button onclick="guardarEdicion('${id}')" class="bg-emerald-600 text-white text-xs px-2 py-1 rounded font-bold">💾</button>
-                    <button onclick="cargarEstudiantesCRUD()" class="bg-slate-400 text-white text-xs px-2 py-1 rounded font-bold">❌</button>
-                </td>
-            `;
-        }
-
-        async function guardarEdicion(id) {
-            const apellidos = document.getElementById(`editAp_${id}`).value.trim();
-            const nombres = document.getElementById(`editNom_${id}`).value.trim();
-            if(!apellidos || !nombres) return alert("Los campos no pueden estar vacíos.");
-
-            const { error } = await supabaseClient.from('estudiantes').update({ apellidos, nombres }).eq('id', id);
-            if(error) alert("Error al actualizar: " + error.message);
-            else { alert("✅ Estudiante actualizado con éxito"); cargarEstudiantesCRUD(); }
-        }
-
-        async function eliminarEstudiante(id) {
-            if(!confirm("¿Está seguro de eliminar a este estudiante del registro?")) return;
-            const { error } = await supabaseClient.from('estudiantes').delete().eq('id', id);
-            if(error) alert("Error al eliminar: " + error.message);
-            else { alert("🗑️ Estudiante eliminado"); cargarEstudiantesCRUD(); }
         }
     </script>
 </body>
