@@ -91,7 +91,7 @@
 
             <!-- 3. Registro Masivo de Estudiantes (Estilo Excel) -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 md:col-span-3">
-                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">3. Importación Masiva de Estudiantes (Pegar desde Excel)</h3>
+                <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">3. Importación Masiva de Estudiantes (Control Antiduplicados por Clave)</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Seleccionar Grado</label>
@@ -111,10 +111,10 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pegar Listado (Formato: Clave \t Apellidos \t Nombres)</label>
                     <textarea id="txtLoteEstudiantes" rows="5" placeholder="Ejemplo:&#10;1	Pérez Gómez	Juan Carlos&#10;2	López Ruano	María Fernanda" class="w-full border p-3 text-sm rounded outline-none font-mono"></textarea>
-                    <p class="text-[11px] text-slate-500 mt-1">💡 Puedes copiar directamente las columnas de Excel y pegarlas aquí. El sistema procesará hasta 50 o más alumnos de un solo golpe.</p>
+                    <p class="text-[11px] text-slate-500 mt-1">💡 Si una clave ya existe en este grado y sección, el sistema actualizará sus datos automáticamente en lugar de duplicarla.</p>
                 </div>
                 <button onclick="guardarEstudiantesLote()" class="mt-3 w-full bg-emerald-600 text-white text-xs py-3 rounded font-bold hover:bg-emerald-700 transition shadow">
-                    🚀 Procesar e Importar Lote de Estudiantes a Supabase
+                    🚀 Procesar e Importar Lote de Estudiantes de Forma Segura
                 </button>
             </div>
 
@@ -240,7 +240,6 @@
                 linea = linea.trim();
                 if (!linea) continue;
 
-                // Separar por tabulación (que es lo que copia Excel) o comas
                 const columnas = linea.split(/\t|,/);
                 if (columnas.length >= 3) {
                     let clave = parseInt(columnas[0].trim());
@@ -260,16 +259,18 @@
             }
 
             if (estudiantesParaInsertar.length === 0) {
-                return alert("No se encontraron registros válidos. Verifique que el formato sea: Clave [Tab] Apellidos [Tab] Nombres");
+                return alert("No se encontraron registros válidos. Verifique el formato.");
             }
 
-            // Enviar lote completo a Supabase
-            const { error } = await supabaseClient.from('estudiantes').insert(estudiantesParaInsertar);
+            // Inserción con Upsert para evitar duplicados y actualizar si la clave ya existe
+            const { error } = await supabaseClient
+                .from('estudiantes')
+                .upsert(estudiantesParaInsertar, { onConflict: 'grado_id,seccion_id,clave' });
 
             if (error) {
                 alert("Error al guardar el lote: " + error.message);
             } else {
-                alert(`¡Éxito! Se han importado ${estudiantesParaInsertar.length} estudiantes correctamente a Supabase.`);
+                alert(`¡Éxito! Se han procesado e importado ${estudiantesParaInsertar.length} estudiantes sin duplicar claves.`);
                 document.getElementById('txtLoteEstudiantes').value = '';
             }
         }
