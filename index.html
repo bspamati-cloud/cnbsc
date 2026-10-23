@@ -11,7 +11,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <!-- BARRA NAVEGACIÓN (Se muestra solo tras autenticarse) -->
+    <!-- BARRA NAVEGACIÓN -->
     <header id="appHeader" class="bg-indigo-900 text-white shadow-md p-4 hidden">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
             <div>
@@ -68,33 +68,46 @@
         <h2 class="text-2xl font-bold mb-4 text-slate-800">Panel de Administración General</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
+            <!-- 1. Registro de Grados -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">1. Registro de Grados</h3>
                 <div class="space-y-3">
-                    <input type="text" id="inputGrado" placeholder="Ej: 4to MEIBI" class="w-full border p-2 text-sm rounded">
-                    <button onclick="guardarGrado()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900">
+                    <input type="text" id="inputGrado" placeholder="Ej: 4to MEIBI" class="w-full border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button onclick="guardarGrado()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">
                         + Registrar Grado
                     </button>
                 </div>
             </div>
 
+            <!-- 2. Asignaturas y Cursos -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">2. Asignaturas y Cursos</h3>
                 <div class="space-y-3">
-                    <input type="text" id="inputMateria" placeholder="Ej: Psicopedagogía" class="w-full border p-2 text-sm rounded">
-                    <button onclick="guardarMateria()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900">
+                    <input type="text" id="inputMateria" placeholder="Ej: Psicopedagogía" class="w-full border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button onclick="guardarMateria()" class="w-full bg-indigo-800 text-white text-xs py-2 rounded font-bold hover:bg-indigo-900 transition">
                         + Registrar Asignatura
                     </button>
                 </div>
             </div>
 
+            <!-- 3. Registro de Estudiantes con Grado y Sección -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h3 class="font-bold text-indigo-900 mb-3 border-b pb-2">3. Registro de Estudiantes</h3>
                 <div class="space-y-3">
-                    <input type="number" id="estClave" placeholder="Clave" class="w-full border p-2 text-sm rounded">
-                    <input type="text" id="estApellidos" placeholder="Apellidos" class="w-full border p-2 text-sm rounded">
-                    <input type="text" id="estNombres" placeholder="Nombres" class="w-full border p-2 text-sm rounded">
-                    <button onclick="guardarEstudiante()" class="w-full bg-emerald-600 text-white text-xs py-2 rounded font-bold hover:bg-emerald-700">
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="selectGradoEstudiante" class="border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">Seleccione Grado</option>
+                        </select>
+                        <select id="selectSeccionEstudiante" class="border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="A">Sección A</option>
+                            <option value="B">Sección B</option>
+                            <option value="Única">Única</option>
+                        </select>
+                    </div>
+                    <input type="number" id="estClave" placeholder="Clave (Ej: 1)" class="w-full border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="text" id="estApellidos" placeholder="Apellidos" class="w-full border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="text" id="estNombres" placeholder="Nombres" class="w-full border p-2 text-sm rounded focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button onclick="guardarEstudiante()" class="w-full bg-emerald-600 text-white text-xs py-2 rounded font-bold hover:bg-emerald-700 transition">
                         + Guardar Estudiante
                     </button>
                 </div>
@@ -103,7 +116,7 @@
         </div>
     </section>
 
-    <!-- SCRIPT DE CONEXIÓN CON SUPABASE AUTH -->
+    <!-- SCRIPT DE CONEXIÓN CON SUPABASE -->
     <script>
         const SUPABASE_URL = "https://tzjyhuqmhpbgwdbzesyw.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_Oy_I1GmK4d350RvLgrCo0w_IPTEFnej";
@@ -148,6 +161,9 @@
             const rolTexto = perfil ? perfil.rol : 'admin';
             document.getElementById('userInfo').innerText = `Usuario: ${email}`;
             document.getElementById('lblRol').innerText = rolTexto.toUpperCase();
+
+            // Cargar los grados en el selector al entrar al panel
+            cargarGradosEnSelect();
         }
 
         async function cerrarSesion() {
@@ -156,34 +172,83 @@
         }
 
         async function guardarGrado() {
-            const nom = document.getElementById('inputGrado').value;
+            const nom = document.getElementById('inputGrado').value.trim();
             if(!nom) return alert("Escriba el nombre del grado");
+            
             const { error } = await supabaseClient.from('grados').insert([{ nombre_grado: nom }]);
             if(error) alert("Error al guardar: " + error.message);
-            else { alert("✅ Grado guardado exitosamente en Supabase"); document.getElementById('inputGrado').value = ''; }
+            else { 
+                alert("✅ Grado guardado exitosamente en Supabase"); 
+                document.getElementById('inputGrado').value = ''; 
+                cargarGradosEnSelect();
+            }
+        }
+
+        async function cargarGradosEnSelect() {
+            const { data, error } = await supabaseClient.from('grados').select('id, nombre_grado').order('nombre_grado');
+            const select = document.getElementById('selectGradoEstudiante');
+            
+            if (error) {
+                console.error("Error cargando grados:", error);
+                return;
+            }
+
+            select.innerHTML = '<option value="">Seleccione Grado</option>';
+            if (data) {
+                data.forEach(g => {
+                    select.innerHTML += `<option value="${g.id}">${g.nombre_grado}</option>`;
+                });
+            }
         }
 
         async function guardarMateria() {
-            const nom = document.getElementById('inputMateria').value;
+            const nom = document.getElementById('inputMateria').value.trim();
             if(!nom) return alert("Escriba la asignatura");
+            
             const { error } = await supabaseClient.from('asignaturas').insert([{ nombre_asignatura: nom }]);
             if(error) alert("Error al guardar: " + error.message);
             else { alert("✅ Asignatura guardada exitosamente"); document.getElementById('inputMateria').value = ''; }
         }
 
         async function guardarEstudiante() {
+            const gradoId = document.getElementById('selectGradoEstudiante').value;
+            const nombreSeccion = document.getElementById('selectSeccionEstudiante').value;
             const clave = document.getElementById('estClave').value;
-            const apellidos = document.getElementById('estApellidos').value;
-            const nombres = document.getElementById('estNombres').value;
-            if(!clave || !apellidos || !nombres) return alert("Complete los datos del estudiante");
+            const apellidos = document.getElementById('estApellidos').value.trim();
+            const nombres = document.getElementById('estNombres').value.trim();
 
+            if(!gradoId || !clave || !apellidos || !nombres) {
+                return alert("Por favor complete todos los campos del estudiante y seleccione un grado.");
+            }
+
+            // Primero aseguramos que exista la sección en la tabla 'secciones'
+            let { data: seccData } = await supabaseClient.from('secciones').select('id').eq('nombre_seccion', nombreSeccion).maybeSingle();
+            let seccionId;
+
+            if (!seccData) {
+                let { data: nuevaSecc, error: errSecc } = await supabaseClient.from('secciones').insert([{ nombre_seccion: nombreSeccion }]).select('id').single();
+                if (errSecc) return alert("Error al registrar sección: " + errSecc.message);
+                seccionId = nuevaSecc.id;
+            } else {
+                seccionId = seccData.id;
+            }
+
+            // Guardar el estudiante vinculado al grado y sección
             const { error } = await supabaseClient.from('estudiantes').insert([{
                 clave: parseInt(clave),
                 apellidos: apellidos,
-                nombres: nombres
+                nombres: nombres,
+                grado_id: gradoId,
+                seccion_id: seccionId
             }]);
-            if(error) alert("Error al guardar: " + error.message);
-            else { alert("✅ Estudiante registrado en Supabase"); }
+
+            if(error) alert("Error al guardar estudiante: " + error.message);
+            else { 
+                alert("✅ Estudiante registrado exitosamente en Supabase");
+                document.getElementById('estClave').value = '';
+                document.getElementById('estApellidos').value = '';
+                document.getElementById('estNombres').value = '';
+            }
         }
     </script>
 </body>
